@@ -1,0 +1,11 @@
+.venv/
+__pycache__/
+*.py[cod]
+models/
+reports/*.png
+.DS_Store
+.pytest_cache/
+data/catalog.db
+# Never commit the shop's real invoices or any extract of them.
+private_eval/
+*.pdf

@@ -1,0 +1,38 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+
+      # The encoder is not needed to test the pipeline: the API falls back to
+      # the lexical retriever, so CI installs the light dependency set only.
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install numpy scikit-learn rapidfuzz fastapi "uvicorn[standard]" \
+                      pydantic pytest httpx
+
+      # data/catalog.jsonl is committed; the SQLite index and the query sets
+      # are derived from it so a fresh clone reproduces them exactly.
+      - name: Rebuild derived artefacts
+        run: |
+          python scripts/prepare_data.py --from-jsonl data/catalog.jsonl
+          python scripts/build_queries.py
+
+      - name: Run tests
+        run: python -m pytest tests -q
+
+      - name: Lexical baseline must not regress
+        run: python scripts/check_baseline.py --min-recall1 0.90
